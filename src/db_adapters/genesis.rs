@@ -42,7 +42,7 @@ where
 pub(crate) async fn store_genesis_records(
     pool: Database<PgConnection>,
     near_config: near_indexer::NearConfig,
-) {
+) -> anyhow::Result<()> {
     tracing::info!(
         target: crate::INDEXER_FOR_EXPLORER,
         "Storing genesis records to database...",
@@ -66,9 +66,9 @@ pub(crate) async fn store_genesis_records(
                 std::mem::swap(&mut accounts_to_store, &mut accounts_to_store_chunk);
                 let pool = pool.clone();
                 block_on(actix_arbiter, async move {
-                    store_accounts_from_genesis(pool, accounts_to_store_chunk).await;
+                    store_accounts_from_genesis(pool, accounts_to_store_chunk).await
                 })
-                .expect("storing accounts from genesis failed");
+                .expect("storing accounts from genesis failed")?;
             }
             if access_keys_to_store.len() == 5_000 {
                 let mut access_keys_to_store_chunk = vec![];
@@ -112,11 +112,11 @@ pub(crate) async fn store_genesis_records(
         })
         .expect("storing leftover accounts and access keys from genesis failed");
     })
-    .await
-    .expect("storing genesis records failed");
+    .await?;
 
     tracing::info!(
         target: crate::INDEXER_FOR_EXPLORER,
         "Genesis records has been stored.",
     );
+    Ok(())
 }
