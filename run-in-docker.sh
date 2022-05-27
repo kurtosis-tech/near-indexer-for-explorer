@@ -66,11 +66,6 @@ shift 3   # Prep for consuming the extra indexer params below
 # first time; if it already exists, the container is restarting so there's no need to do the migration 
 # or genesis setup
 if ! [ -d "${LOCALNET_NEAR_DIRPATH}" ]; then
-    if ! DATABASE_URL="${database_url}" "${diesel_binary_filepath}" migration run; then
-        echo "Error: The Diesel migration failed" >&2
-        exit 1
-    fi
-
     if ! DATABASE_URL="${database_url}" "${indexer_binary_filepath}" --home-dir "${LOCALNET_NEAR_DIRPATH}" init ${BOOT_NODES:+--boot-nodes=${BOOT_NODES}} --chain-id localnet; then
         echo "Error: An error occurred generating the genesis information" >&2
         exit 1
@@ -104,6 +99,12 @@ if ! [ -d "${LOCALNET_NEAR_DIRPATH}" ]; then
         exit 1
     fi
 fi
+
+if ! DATABASE_URL="${database_url}" "${diesel_binary_filepath}" migration run; then
+    echo "Error: The Diesel migration failed" >&2
+    exit 1
+fi
+
 
 # NOTE1: If the --store-genesis flag isn't set, the accounts in genesis won't get created in the DB which will lead to foreign key constraint violations
 #  See https://github.com/near/near-indexer-for-explorer/issues/167
